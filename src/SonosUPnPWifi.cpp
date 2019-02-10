@@ -17,7 +17,7 @@
 /* Written by Thomas Mittet (code@lookout.no) January 2015.             */
 /************************************************************************/
 
-#include "SonosUPnP.h"
+#include "SonosUPnPWifi.h"
 
 const char p_HttpVersion[] PROGMEM = HTTP_VERSION;
 const char p_HeaderHost[] PROGMEM = HEADER_HOST;
