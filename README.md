@@ -1,3 +1,5 @@
+This version of the library uses [WiFiEsp](https://github.com/bportaluri/WiFiEsp) instead of ethernet to communicate with Sonos.
+
 # SonosUPnP
 
 This library makes interfacing an Arduino with your Sonos system a breeze. The
@@ -9,8 +11,6 @@ for the Arduino platform it its ability to read the state of most of the Sonos
 functions: getting source, player state, track number, track position, volume
 and more. The library is relatively compact and has a small enough memory
 footprint to run on the Arduino Uno and Duemilanove.
-
-This version of the library uses [WiFiEsp]https://github.com/bportaluri/WiFiEsp instead of ethernet to communicate with Sonos.
 
 This version can be used with PlatformIO. 
 
