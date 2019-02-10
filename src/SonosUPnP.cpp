@@ -109,13 +109,13 @@ const char p_GetTransportInfoA[] PROGMEM = SONOS_TAG_GET_TRANSPORT_INFO;
 const char p_GetTransportInfoR[] PROGMEM = SONOS_TAG_GET_TRANSPORT_INFO_RESPONSE;
 const char p_CurrentTransportState[] PROGMEM = SONOS_TAG_CURRENT_TRANSPORT_STATE;
 
-SonosUPnP::SonosUPnP(EthernetClient client, void (*ethernetErrCallback)(void))
+SonosUPnP::SonosUPnP(WiFiEspClient client, void (*wifiErrCallback)(void))
 {
   #ifndef SONOS_WRITE_ONLY_MODE
   this->xPath = MicroXPath_P();
   #endif
-  this->ethClient = client;
-  this->ethernetErrCallback = ethernetErrCallback;
+  this->wifiClient = client;
+  this->wifiErrCallback = wifiErrCallback;
 }
 
 
@@ -391,22 +391,22 @@ TrackInfo SonosUPnP::getTrackInfo(IPAddress speakerIP, char *uriBuffer, size_t u
     char infoBuffer[20] = "";
     // Track number
     PGM_P npath[] = { p_SoapEnvelope, p_SoapBody, p_GetPositionInfoR, p_Track };
-    ethClient_xPath(npath, 4, infoBuffer, sizeof(infoBuffer));
+    wifiClient_xPath(npath, 4, infoBuffer, sizeof(infoBuffer));
     trackInfo.number = atoi(infoBuffer);
     // Track duration
     PGM_P dpath[] = { p_SoapEnvelope, p_SoapBody, p_GetPositionInfoR, p_TrackDuration };
-    ethClient_xPath(dpath, 4, infoBuffer, sizeof(infoBuffer));
+    wifiClient_xPath(dpath, 4, infoBuffer, sizeof(infoBuffer));
     trackInfo.duration = getTimeInSeconds(infoBuffer);
     // Track URI
     PGM_P upath[] = { p_SoapEnvelope, p_SoapBody, p_GetPositionInfoR, p_TrackURI };
-    ethClient_xPath(upath, 4, uriBuffer, uriBufferSize);
+    wifiClient_xPath(upath, 4, uriBuffer, uriBufferSize);
     trackInfo.uri = uriBuffer;
     // Track position
     PGM_P ppath[] = { p_SoapEnvelope, p_SoapBody, p_GetPositionInfoR, p_RelTime };
-    ethClient_xPath(ppath, 4, infoBuffer, sizeof(infoBuffer));
+    wifiClient_xPath(ppath, 4, infoBuffer, sizeof(infoBuffer));
     trackInfo.position = getTimeInSeconds(infoBuffer);
   }
-  ethClient_stop();
+  wifiClient_stop();
   return trackInfo;
 }
 
@@ -484,17 +484,17 @@ uint16_t SonosUPnP::getTrackPositionPerMille(IPAddress speakerIP)
     char result[20];
     xPath.reset();
     PGM_P dpath[] = { p_SoapEnvelope, p_SoapBody, p_GetPositionInfoR, p_TrackDuration };
-    ethClient_xPath(dpath, 4, result, sizeof(result));
+    wifiClient_xPath(dpath, 4, result, sizeof(result));
     uint32_t duration = getTimeInSeconds(result);
     PGM_P ppath[] = { p_SoapEnvelope, p_SoapBody, p_GetPositionInfoR, p_RelTime };
-    ethClient_xPath(ppath, 4, result, sizeof(result));
+    wifiClient_xPath(ppath, 4, result, sizeof(result));
     uint32_t position = getTimeInSeconds(result);
     if (duration && position)
     {
       perMille = (position * 1000) / duration;
     }
   }
-  ethClient_stop();
+  wifiClient_stop();
   return perMille;
 }
 
@@ -592,12 +592,12 @@ void SonosUPnP::upnpSet(IPAddress ip, uint8_t upnpMessageType, PGM_P action_P, c
 void SonosUPnP::upnpSet(IPAddress ip, uint8_t upnpMessageType, PGM_P action_P, const char *field, const char *valueA, const char *valueB, PGM_P extraStart_P, PGM_P extraEnd_P, const char *extraValue)
 {
   upnpPost(ip, upnpMessageType, action_P, field, valueA, valueB, extraStart_P, extraEnd_P, extraValue);
-  ethClient_stop();
+  wifiClient_stop();
 }
 
 bool SonosUPnP::upnpPost(IPAddress ip, uint8_t upnpMessageType, PGM_P action_P, const char *field, const char *valueA, const char *valueB, PGM_P extraStart_P, PGM_P extraEnd_P, const char *extraValue)
 {
-  if (!ethClient.connect(ip, UPNP_PORT)) return false;
+  if (!wifiClient.connect(ip, UPNP_PORT)) return false;
   
   // Get UPnP service name
   PGM_P upnpService = getUpnpService(upnpMessageType);
@@ -637,62 +637,62 @@ bool SonosUPnP::upnpPost(IPAddress ip, uint8_t upnpMessageType, PGM_P action_P, 
   char buffer[50];
 
   // Write HTTP start
-  ethClient_write("POST ");
-  ethClient_write_P(getUpnpEndpoint(upnpMessageType), buffer, sizeof(buffer));
-  ethClient_write_P(p_HttpVersion, buffer, sizeof(buffer));
+  wifiClient_write("POST ");
+  wifiClient_write_P(getUpnpEndpoint(upnpMessageType), buffer, sizeof(buffer));
+  wifiClient_write_P(p_HttpVersion, buffer, sizeof(buffer));
 
   // Write HTTP header
   sprintf_P(buffer, p_HeaderHost, ip[0], ip[1], ip[2], ip[3], UPNP_PORT); // 29 bytes max
-  ethClient_write(buffer);
-  ethClient_write_P(p_HeaderContentType, buffer, sizeof(buffer));
+  wifiClient_write(buffer);
+  wifiClient_write_P(p_HeaderContentType, buffer, sizeof(buffer));
   sprintf_P(buffer, p_HeaderContentLength, contentLength); // 23 bytes max
-  ethClient_write(buffer);
-  ethClient_write_P(p_HeaderSoapAction, buffer, sizeof(buffer));
-  ethClient_write_P(p_UpnpUrnSchema, buffer, sizeof(buffer));
-  ethClient_write_P(upnpService, buffer, sizeof(buffer));
-  ethClient_write("#");
-  ethClient_write_P(action_P, buffer, sizeof(buffer));
-  ethClient_write(HEADER_SOAP_ACTION_END);
-  ethClient_write_P(p_HeaderConnection, buffer, sizeof(buffer));
-  ethClient_write("\n");
+  wifiClient_write(buffer);
+  wifiClient_write_P(p_HeaderSoapAction, buffer, sizeof(buffer));
+  wifiClient_write_P(p_UpnpUrnSchema, buffer, sizeof(buffer));
+  wifiClient_write_P(upnpService, buffer, sizeof(buffer));
+  wifiClient_write("#");
+  wifiClient_write_P(action_P, buffer, sizeof(buffer));
+  wifiClient_write(HEADER_SOAP_ACTION_END);
+  wifiClient_write_P(p_HeaderConnection, buffer, sizeof(buffer));
+  wifiClient_write("\n");
 
   // Write HTTP body
-  ethClient_write_P(p_SoapEnvelopeStart, buffer, sizeof(buffer));
-  ethClient_write_P(p_SoapBodyStart, buffer, sizeof(buffer));
-  ethClient_write(SOAP_ACTION_START_TAG_START);
-  ethClient_write_P(action_P, buffer, sizeof(buffer));
-  ethClient_write(SOAP_ACTION_START_TAG_NS);
-  ethClient_write_P(p_UpnpUrnSchema, buffer, sizeof(buffer));
-  ethClient_write_P(upnpService, buffer, sizeof(buffer));
-  ethClient_write(SOAP_ACTION_START_TAG_END);
-  ethClient_write_P(p_InstenceId0Tag, buffer, sizeof(buffer));
+  wifiClient_write_P(p_SoapEnvelopeStart, buffer, sizeof(buffer));
+  wifiClient_write_P(p_SoapBodyStart, buffer, sizeof(buffer));
+  wifiClient_write(SOAP_ACTION_START_TAG_START);
+  wifiClient_write_P(action_P, buffer, sizeof(buffer));
+  wifiClient_write(SOAP_ACTION_START_TAG_NS);
+  wifiClient_write_P(p_UpnpUrnSchema, buffer, sizeof(buffer));
+  wifiClient_write_P(upnpService, buffer, sizeof(buffer));
+  wifiClient_write(SOAP_ACTION_START_TAG_END);
+  wifiClient_write_P(p_InstenceId0Tag, buffer, sizeof(buffer));
   if (fieldLength)
   {
     sprintf(buffer, SOAP_TAG_START, field); // 18 bytes
-    ethClient_write(buffer);
-    ethClient_write(valueA);
-    ethClient_write(valueB);
+    wifiClient_write(buffer);
+    wifiClient_write(valueA);
+    wifiClient_write(valueB);
     sprintf(buffer, SOAP_TAG_END, field); // 19 bytes
-    ethClient_write(buffer);
+    wifiClient_write(buffer);
   }
   if (extraStart_P)
   {
-    ethClient_write_P(extraStart_P, buffer, sizeof(buffer)); // 390 bytes
-    ethClient_write(extraValue);
-    ethClient_write_P(extraEnd_P, buffer, sizeof(buffer)); // 271 bytes
+    wifiClient_write_P(extraStart_P, buffer, sizeof(buffer)); // 390 bytes
+    wifiClient_write(extraValue);
+    wifiClient_write_P(extraEnd_P, buffer, sizeof(buffer)); // 271 bytes
   }
-  ethClient_write(SOAP_ACTION_END_TAG_START);
-  ethClient_write_P(action_P, buffer, sizeof(buffer)); // 35 bytes
-  ethClient_write(SOAP_ACTION_END_TAG_END);
-  ethClient_write_P(p_SoapBodyEnd, buffer, sizeof(buffer)); // 10 bytes
-  ethClient_write_P(p_SoapEnvelopeEnd, buffer, sizeof(buffer)); // 14 bytes
+  wifiClient_write(SOAP_ACTION_END_TAG_START);
+  wifiClient_write_P(action_P, buffer, sizeof(buffer)); // 35 bytes
+  wifiClient_write(SOAP_ACTION_END_TAG_END);
+  wifiClient_write_P(p_SoapBodyEnd, buffer, sizeof(buffer)); // 10 bytes
+  wifiClient_write_P(p_SoapEnvelopeEnd, buffer, sizeof(buffer)); // 14 bytes
 
   uint32_t start = millis();
-  while (!ethClient.available())
+  while (!wifiClient.available())
   {
     if (millis() > (start + UPNP_RESPONSE_TIMEOUT_MS))
     {
-      if (ethernetErrCallback) ethernetErrCallback();
+      if (wifiErrCallback) wifiErrCallback();
       return false;
     }
   }
@@ -719,13 +719,13 @@ PGM_P SonosUPnP::getUpnpEndpoint(uint8_t upnpMessageType)
   }
 }
 
-void SonosUPnP::ethClient_write(const char *data)
+void SonosUPnP::wifiClient_write(const char *data)
 {
   //Serial.print(data);
-  ethClient.print(data);
+  wifiClient.print(data);
 }
 
-void SonosUPnP::ethClient_write_P(PGM_P data_P, char *buffer, size_t bufferSize)
+void SonosUPnP::wifiClient_write_P(PGM_P data_P, char *buffer, size_t bufferSize)
 {
   uint16_t dataLen = strlen_P(data_P);
   uint16_t dataPos = 0;
@@ -733,27 +733,27 @@ void SonosUPnP::ethClient_write_P(PGM_P data_P, char *buffer, size_t bufferSize)
   {
     strlcpy_P(buffer, data_P + dataPos, bufferSize);
     //Serial.print(buffer);
-    ethClient.print(buffer);
+    wifiClient.print(buffer);
     dataPos += bufferSize - 1;
   }
 }
 
-void SonosUPnP::ethClient_stop()
+void SonosUPnP::wifiClient_stop()
 {
-  if (ethClient)
+  if (wifiClient)
   {
-    while (ethClient.available()) ethClient.read();
-    ethClient.stop();
+    while (wifiClient.available()) wifiClient.read();
+    wifiClient.stop();
   }
 }
 
 
 #ifndef SONOS_WRITE_ONLY_MODE
 
-void SonosUPnP::ethClient_xPath(PGM_P *path, uint8_t pathSize, char *resultBuffer, size_t resultBufferSize)
+void SonosUPnP::wifiClient_xPath(PGM_P *path, uint8_t pathSize, char *resultBuffer, size_t resultBufferSize)
 {
   xPath.setPath(path, pathSize);
-  while (ethClient.available() && !xPath.getValue(ethClient.read(), resultBuffer, resultBufferSize));
+  while (wifiClient.available() && !xPath.getValue(wifiClient.read(), resultBuffer, resultBufferSize));
 }
 
 void SonosUPnP::upnpGetString(IPAddress speakerIP, uint8_t upnpMessageType, PGM_P action_P, const char *field, const char *value, PGM_P *path, uint8_t pathSize, char *resultBuffer, size_t resultBufferSize)
@@ -761,9 +761,9 @@ void SonosUPnP::upnpGetString(IPAddress speakerIP, uint8_t upnpMessageType, PGM_
   if (upnpPost(speakerIP, upnpMessageType, action_P, field, value, "", 0, 0, ""))
   {
     xPath.reset();
-    ethClient_xPath(path, pathSize, resultBuffer, resultBufferSize);
+    wifiClient_xPath(path, pathSize, resultBuffer, resultBufferSize);
   }
-  ethClient_stop();
+  wifiClient_stop();
 }
 
 uint32_t SonosUPnP::getTimeInSeconds(const char *time)

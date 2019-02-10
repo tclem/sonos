@@ -29,9 +29,9 @@
   #include <pgmspace.h>
 #endif
 #ifndef SONOS_WRITE_ONLY_MODE
-#include "../../MicroXPath/src/MicroXPath_P.h"
+#include "MicroXPath_P.h"
 #endif
-#include "../../Ethernet/src/EthernetClient.h"
+#include "WiFiEsp.h"
 
 // HTTP:
 #define HTTP_VERSION " HTTP/1.1\n"
@@ -280,7 +280,7 @@ class SonosUPnP
 
   public:
 
-    SonosUPnP(EthernetClient client, void (*ethernetErrCallback)(void));
+    SonosUPnP(WiFiEspClient client, void (*wifiErrCallback)(void));
 
     void setAVTransportURI(IPAddress speakerIP, const char *scheme, const char *address);
     void seekTrack(IPAddress speakerIP, uint16_t index);
@@ -341,9 +341,9 @@ class SonosUPnP
 
   private:
 
-    EthernetClient ethClient;
+    WiFiEspClient wifiClient;
 
-    void (*ethernetErrCallback)(void);
+    void (*wifiErrCallback)(void);
     void seek(IPAddress speakerIP, const char *mode, const char *data);
     void setAVTransportURI(IPAddress speakerIP, const char *scheme, const char *address, PGM_P metaStart_P, PGM_P metaEnd_P, const char *metaValue);
     void upnpSet(IPAddress ip, uint8_t upnpMessageType, PGM_P action_P);
@@ -352,14 +352,14 @@ class SonosUPnP
     bool upnpPost(IPAddress ip, uint8_t upnpMessageType, PGM_P action_P, const char *field, const char *valueA, const char *valueB, PGM_P extraStart_P, PGM_P extraEnd_P, const char *extraValue);
     const char *getUpnpService(uint8_t upnpMessageType);
     const char *getUpnpEndpoint(uint8_t upnpMessageType);
-    void ethClient_write(const char *data);
-    void ethClient_write_P(PGM_P data_P, char *buffer, size_t bufferSize);
-    void ethClient_stop();
+    void wifiClient_write(const char *data);
+    void wifiClient_write_P(PGM_P data_P, char *buffer, size_t bufferSize);
+    void wifiClient_stop();
 
     #ifndef SONOS_WRITE_ONLY_MODE
 
     MicroXPath_P xPath;
-    void ethClient_xPath(PGM_P *path, uint8_t pathSize, char *resultBuffer, size_t resultBufferSize);
+    void wifiClient_xPath(PGM_P *path, uint8_t pathSize, char *resultBuffer, size_t resultBufferSize);
     void upnpGetString(IPAddress speakerIP, uint8_t upnpMessageType, PGM_P action_P, const char *field, const char *value, PGM_P *path, uint8_t pathSize, char *resultBuffer, size_t resultBufferSize);
     uint32_t getTimeInSeconds(const char *time);
     uint32_t uiPow(uint16_t base, uint16_t exp);
