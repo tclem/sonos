@@ -10,9 +10,9 @@ functions: getting source, player state, track number, track position, volume
 and more. The library is relatively compact and has a small enough memory
 footprint to run on the Arduino Uno and Duemilanove.
 
-**ESP8266:**  
-For an ESP8266 port, have a look this fork:
-[github.com/antonmeyer/sonos](https://github.com/antonmeyer/sonos)
+This version of the library uses [WiFiEsp]https://github.com/bportaluri/WiFiEsp instead of ethernet to communicate with Sonos.
+
+This version can be used with PlatformIO. 
 
 **Getting Started:**
 - Download and add this library to your Ardiono libraries folder.
