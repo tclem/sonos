@@ -1,5 +1,6 @@
 {
     "name": "SonosUPnPWifi",
+    "keywords": "sonos, sonosupnp, wifi, esp8266, arduino",
     "version": "1.1",
     "author": "Thomas Mittet, Frank Bregulla",
     "maintainer": "Thomas Mittet <code@lookout.no>, Fran Bregulla",
