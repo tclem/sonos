@@ -2,9 +2,12 @@
     "name": "SonosUPnPWifi",
     "keywords": "sonos, sonosupnp, wifi, esp8266, arduino",
     "version": "1.1",
-    "author": "Thomas Mittet, Frank Bregulla",
     "maintainer": "Thomas Mittet <code@lookout.no>, Fran Bregulla",
     "description": "Sonos UPnP is an UPnP based remote control library for the Sonos speaker system. The library supports both controlling and reading the state of Sonos speakers connected to your LAN.",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/frankbregulla1111/sonos"
+    },
     "homepage": "http://blog.lookout.no/2015/01/sonosupnp-library-for-arduino.html",
     "platforms": "*",
     "dependencies": [
