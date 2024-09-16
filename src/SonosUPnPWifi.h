@@ -31,7 +31,8 @@
 #ifndef SONOS_WRITE_ONLY_MODE
 #include "MicroXPath_P.h"
 #endif
-#include "WiFiEsp.h"
+#include "WiFi.h"
+// #include "WiFiEsp.h"
 
 // HTTP:
 #define HTTP_VERSION " HTTP/1.1\n"
@@ -218,6 +219,8 @@
 #define SONOS_TAG_DESIRED_MUTE "DesiredMute"
 #define SONOS_TAG_SET_VOLUME "SetVolume"
 #define SONOS_TAG_DESIRED_VOLUME "DesiredVolume"
+#define SONOS_TAG_SET_RELATIVE_VOLUME "SetRelativeVolume"
+#define SONOS_TAG_ADJUSTMENT "Adjustment"
 #define SONOS_TAG_SET_BASS "SetBass"
 #define SONOS_TAG_DESIRED_BASS "DesiredBass"
 #define SONOS_TAG_SET_TREBLE "SetTreble"
@@ -280,7 +283,7 @@ class SonosUPnP
 
   public:
 
-    SonosUPnP(WiFiEspClient client, void (*wifiErrCallback)(void));
+    SonosUPnP(WiFiClient client, void (*wifiErrCallback)(void));
 
     void setAVTransportURI(IPAddress speakerIP, const char *scheme, const char *address);
     void seekTrack(IPAddress speakerIP, uint16_t index);
@@ -300,6 +303,8 @@ class SonosUPnP
     void setMute(IPAddress speakerIP, bool state);
     void setVolume(IPAddress speakerIP, uint8_t volume);
     void setVolume(IPAddress speakerIP, uint8_t volume, const char *channel);
+    void setRelativeVolume(IPAddress speakerIP, int8_t volume);
+    void setRelativeVolume(IPAddress speakerIP, int8_t volume, const char *channel);
     void setBass(IPAddress speakerIP, int8_t bass);
     void setTreble(IPAddress speakerIP, int8_t treble);
     void setLoudness(IPAddress speakerIP, bool state);
@@ -307,9 +312,9 @@ class SonosUPnP
     void addPlaylistToQueue(IPAddress speakerIP, uint16_t playlistIndex);
     void addTrackToQueue(IPAddress speakerIP, const char *scheme, const char *address);
     void removeAllTracksFromQueue(IPAddress speakerIP);
-    
+
     #ifndef SONOS_WRITE_ONLY_MODE
-    
+
     void setRepeat(IPAddress speakerIP, bool repeat);
     void setShuffle(IPAddress speakerIP, bool shuffle);
     void toggleRepeat(IPAddress speakerIP);
@@ -336,12 +341,12 @@ class SonosUPnP
     int8_t getBass(IPAddress speakerIP);
     int8_t getTreble(IPAddress speakerIP);
     bool getLoudness(IPAddress speakerIP);
-    
+
     #endif
 
   private:
 
-    WiFiEspClient wifiClient;
+    WiFiClient wifiClient;
 
     void (*wifiErrCallback)(void);
     void seek(IPAddress speakerIP, const char *mode, const char *data);

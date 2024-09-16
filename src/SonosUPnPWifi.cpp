@@ -94,6 +94,7 @@ const char p_CurrentLoudness[] PROGMEM = SONOS_TAG_CURRENT_LOUDNESS;
 
 const char p_SetMute[] PROGMEM = SONOS_TAG_SET_MUTE;
 const char p_SetVolume[] PROGMEM = SONOS_TAG_SET_VOLUME;
+const char p_SetRelativeVolume[] PROGMEM = SONOS_TAG_SET_RELATIVE_VOLUME;
 const char p_SetBass[] PROGMEM = SONOS_TAG_SET_BASS;
 const char p_SetTreble[] PROGMEM = SONOS_TAG_SET_TREBLE;
 const char p_SetLoudness[] PROGMEM = SONOS_TAG_SET_LOUDNESS;
@@ -109,7 +110,7 @@ const char p_GetTransportInfoA[] PROGMEM = SONOS_TAG_GET_TRANSPORT_INFO;
 const char p_GetTransportInfoR[] PROGMEM = SONOS_TAG_GET_TRANSPORT_INFO_RESPONSE;
 const char p_CurrentTransportState[] PROGMEM = SONOS_TAG_CURRENT_TRANSPORT_STATE;
 
-SonosUPnP::SonosUPnP(WiFiEspClient client, void (*wifiErrCallback)(void))
+SonosUPnP::SonosUPnP(WiFiClient client, void (*wifiErrCallback)(void))
 {
   #ifndef SONOS_WRITE_ONLY_MODE
   this->xPath = MicroXPath_P();
@@ -246,6 +247,20 @@ void SonosUPnP::setVolume(IPAddress speakerIP, uint8_t volume, const char *chann
   upnpSet(
     speakerIP, UPNP_RENDERING_CONTROL, p_SetVolume,
     SONOS_TAG_DESIRED_VOLUME, volumeChar, "", p_ChannelTagStart, p_ChannelTagEnd, channel);
+}
+
+void SonosUPnP::setRelativeVolume(IPAddress speakerIP, int8_t volume)
+{
+  setRelativeVolume(speakerIP, volume, SONOS_CHANNEL_MASTER);
+}
+
+void SonosUPnP::setRelativeVolume(IPAddress speakerIP, int8_t volume, const char *channel)
+{
+  char volumeChar[4];
+  itoa(volume, volumeChar, 10);
+  upnpSet(
+    speakerIP, UPNP_RENDERING_CONTROL, p_SetRelativeVolume,
+    SONOS_TAG_ADJUSTMENT, volumeChar, "", p_ChannelTagStart, p_ChannelTagEnd, channel);
 }
 
 void SonosUPnP::setBass(IPAddress speakerIP, int8_t bass)
@@ -598,7 +613,7 @@ void SonosUPnP::upnpSet(IPAddress ip, uint8_t upnpMessageType, PGM_P action_P, c
 bool SonosUPnP::upnpPost(IPAddress ip, uint8_t upnpMessageType, PGM_P action_P, const char *field, const char *valueA, const char *valueB, PGM_P extraStart_P, PGM_P extraEnd_P, const char *extraValue)
 {
   if (!wifiClient.connect(ip, UPNP_PORT)) return false;
-  
+
   // Get UPnP service name
   PGM_P upnpService = getUpnpService(upnpMessageType);
 
@@ -721,22 +736,41 @@ PGM_P SonosUPnP::getUpnpEndpoint(uint8_t upnpMessageType)
 
 void SonosUPnP::wifiClient_write(const char *data)
 {
-  //Serial.print(data);
+  Serial.print(data);
   wifiClient.print(data);
 }
 
 void SonosUPnP::wifiClient_write_P(PGM_P data_P, char *buffer, size_t bufferSize)
 {
+  // due to lack of strlcpy_P, we leave a utf8 (max) byte-width of space at the
+  // end of buffer in case we overflow and have to manually NULL terminate.
+  size_t safeBufferSize = bufferSize - 4;
+
   uint16_t dataLen = strlen_P(data_P);
   uint16_t dataPos = 0;
   while (dataLen > dataPos)
   {
-    strlcpy_P(buffer, data_P + dataPos, bufferSize);
-    //Serial.print(buffer);
+    strncpy_P(buffer, data_P + dataPos, safeBufferSize);
+    buffer[safeBufferSize] = 0; // ensures buffer is null terminated
+    Serial.print(buffer);
     wifiClient.print(buffer);
-    dataPos += bufferSize - 1;
+    dataPos += safeBufferSize - 1;
   }
 }
+
+// void SonosUPnP::wifiClient_write_P(PGM_P data_P, char *buffer, size_t bufferSize)
+// {
+//   uint16_t dataLen = strlen_P(data_P);
+//   uint16_t dataPos = 0;
+//   while (dataLen > dataPos)
+//   {
+//     strlcpy_P(buffer, data_P + dataPos, bufferSize);
+
+//     // Serial.print(buffer);
+//     wifiClient.print(buffer);
+//     dataPos += bufferSize - 1;
+//   }
+// }
 
 void SonosUPnP::wifiClient_stop()
 {
@@ -785,7 +819,7 @@ uint32_t SonosUPnP::getTimeInSeconds(const char *time)
       seconds += (character - '0') * uiPow(10, dPower) * uiPow(60, tPower);
       dPower++;
     }
-  }  
+  }
   return seconds;
 }
 
@@ -803,6 +837,7 @@ uint32_t SonosUPnP::uiPow(uint16_t base, uint16_t exponent)
 
 uint8_t SonosUPnP::convertState(const char *input)
 {
+  Serial.println(input);
   if (strcmp(input, SONOS_STATE_PLAYING_VALUE) == 0) return SONOS_STATE_PLAYING;
   if (strcmp(input, SONOS_STATE_PAUSED_VALUE) == 0)  return SONOS_STATE_PAUSED;
   return SONOS_STATE_STOPPED;
